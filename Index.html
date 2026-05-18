@@ -1,1 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalcMaster Pro</title>
+    <style>
+        :root {
+            --bg-app: #121214;
+            --bg-calc: #1e1e24;
+            --bg-display: #1a1a1e;
+            --txt-main: #ffffff;
+            --txt-muted: #a0a0a5;
+            --btn-num: #2e2e36;
+            --btn-num-hover: #3f3f4a;
+            --btn-op: #ff9f0a;
+            --btn-op-hover: #ffb340;
+            --btn-special: #4e4e5a;
+            --btn-special-hover: #636373;
+            --accent: #7c3aed;
+            --menu-bg: #18181c;
+        }
 
+        [data-theme="light"] {
+            --bg-app: #f0f2f5;
+            --bg-calc: #ffffff;
+            --bg-display: #f8f9fa;
+            --txt-main: #1c1c1e;
+            --txt-muted: #6c757d;
+            --btn-num: #e5e5ea;
+            --btn-num-hover: #d1d1d6;
+            --btn-op: #ff9500;
+            --btn-op-hover: #e68500;
+            --btn-special: #aeaeae;
+            --btn-special-hover: #c7c7cc;
+            --accent: #5856d6;
+            --menu-bg: #f2f2f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.3s;
+            padding: 10px;
+        }
+
+        /* Container Principal */
+        .calc-container {
+            background-color: var(--bg-calc);
+            width: 100%;
+            max-width: 400px;
+            height: 700px;
+            border-radius: 24px;
+            box-shadow: 0 20px:40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.3s;
+        }
+
+        /* Cabeçalho */
+        .calc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            color: var(--txt-main);
+            z-index: 5;
+        }
+
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--txt-main);
+        }
+
+        .calc-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Menu Lateral (Drawer) */
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 75%;
+            height: 100%;
+            background-color: var(--menu-bg);
+            z-index: 10;
+            transition: left 0.3s ease;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            padding: 20px;
+            color: var(--txt-main);
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--txt-muted);
+            padding-bottom: 10px;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .menu-options {
+            list-style: none;
+        }
+
+        .menu-item {
+            padding: 15px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* Tela de Display */
+        .display {
+            background-color: var(--bg-display);
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            word-wrap: break-word;
+            word-break: break-all;
+            transition: background 0.3s;
+        }
+
+        .display-history {
+            font-size: 16px;
+            color: var(--txt-muted);
+            min-height: 24px;
+            margin-bottom: 5px;
+        }
+
+        .display-current {
+            font-size: 42px;
+            color: var(--txt-main);
+            font-weight: 300;
+            max-height: 110px;
+            overflow-y: auto;
+        }
+
+        /* Painel do Histórico Rápido */
+        .history-panel {
+            position: absolute;
+            bottom: -100%;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: var(--bg-calc);
+            z-index: 8;
+            transition: bottom 0.3s ease;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-top: 2px solid var(--accent);
+        }
+
+        .history-panel.active {
+            bottom: 0;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            text-align: right;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* Teclado e Botões */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .scientific-keys {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .scientific-keys.active {
+            max-height: 200px;
+            padding: 10px 20px;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            height: 60px;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-number {
+            background-color: var(--btn-num);
+            color: var(--txt-main);
+        }
+
+        .btn-number:hover { background-color: var(--btn-num-hover); }
+
+        .btn-operator {
+            background-color: var(--btn-op);
+            color: white;
+        }
+
+        .btn-operator:hover { background-color: var(--btn-op-hover); }
+
+        .btn-spec {
+            background-color: var(--btn-special);
+            color: var(--txt-main);
+            font-size: 18px;
+        }
+
+        .btn-spec:hover { background-color: var(--btn-special-hover); }
+
+        .btn-sci {
+            background-color: var(--bg-display);
+            color: var(--accent);
+            font-size: 16px;
+            height: 45px;
+            border-radius: 12px;
+        }
+
+        .btn-sci:hover { filter: brightness(1.2); }
+
+        .double-width {
+            grid-column: span 2;
+            border-radius: 50px;
+            justify-content: flex-start;
+            padding-left: 25px;
+        }
+
+        .btn-equal {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-equal:hover { filter: brightness(1.1); }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div class="calc-container">
+        <!-- Overlay para fechar o menu ao clicar fora -->
+        <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+        <!-- Menu Lateral -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3>Opções</h3>
+                <span class="close-btn" onclick="toggleMenu()">&times;</span>
+            </div>
+            <ul class="menu-options">
+                <li class="menu-item active" id="opt-std" onclick="switchMode('standard')">🧮 Padrão</li>
+                <li class="menu-item" id="opt-sci" onclick="switchMode('scientific')">🧪 Científica</li>
+                <li class="menu-item" onclick="toggleTheme()">🌓 Mudar Tema</li>
+                <li class="menu-item" onclick="toggleHistory()">⏳ Ver Histórico</li>
+                <li class="menu-item" onclick="clearHistory()" style="color: #ff453a;">🗑️ Limpar Histórico</li>
+            </ul>
+        </div>
+
+        <!-- Cabeçalho do App -->
+        <div class="calc-header">
+            <button class="menu-btn" onclick="toggleMenu()">&#9776;</button>
+            <span class="calc-title" id="calc-title">Padrão</span>
+            <div style="width: 24px;"></div> <!-- Equilíbrio visual -->
+        </div>
+
+        <!-- Tela de Exibição -->
+        <div class="display">
+            <div class="display-history" id="display-history"></div>
+            <div class="display-current" id="display-current">0</div>
+        </div>
+
+        <!-- Histórico Deslizante -->
+        <div class="history-panel" id="history-panel">
+            <div class="sidebar-header">
+                <h3>Histórico</h3>
+                <span class="close-btn" onclick="toggleHistory()">&times;</span>
+            </div>
+            <div class="history-list" id="history-list">
+                <!-- Itens injetados dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Teclas Científicas (Ocultas por padrão) -->
+        <div class="scientific-keys" id="scientific-keys">
+            <button class="btn-sci" onclick="appendSci('Math.sin(')">sin</button>
+            <button class="btn-sci" onclick="appendSci('Math.cos(')">cos</button>
+            <button class="btn-sci" onclick="appendSci('Math.tan(')">tan</button>
+            <button class="btn-sci" onclick="appendSci('Math.log10(')">log</button>
+            <button class="btn-sci" onclick="appendSci('Math.log(')">ln</button>
+            <button class="btn-sci" onclick="appendSci('Math.PI')">&pi;</button>
+            <button class="btn-sci" onclick="appendSci('Math.E')">e</button>
+            <button class="btn-sci" onclick="appendOp('**')">xʸ</button>
+            <button class="btn-sci" onclick="appendSci('Math.sqrt(')">&radic;</button>
+            <button class="btn-sci" onclick="appendToken('(')">(</button>
+        </div>
+
+        <!-- Teclado Padrão -->
+        <div class="keypad">
+            <button class="btn-spec" onclick="clearAll()">AC</button>
+            <button class="btn-spec" onclick="deleteLast()">⌫</button>
+            <button class="btn-spec" onclick="appendOp('%')">%</button>
+            <button class="btn-operator" onclick="appendOp('/')">&divide;</button>
+
+            <button class="btn-number" onclick="appendToken('7')">7</button>
+            <button class="btn-number" onclick="appendToken('8')">8</button>
+            <button class="btn-number" onclick="appendToken('9')">9</button>
+            <button class="btn-operator" onclick="appendOp('*')">&times;</button>
+
+            <button class="btn-number" onclick="appendToken('4')">4</button>
+            <button class="btn-number" onclick="appendToken('5')">5</button>
+            <button class="btn-number" onclick="appendToken('6')">6</button>
+            <button class="btn-operator" onclick="appendOp('-')">&minus;</button>
+
+            <button class="btn-number" onclick="appendToken('1')">1</button>
+            <button class="btn-number" onclick="appendToken('2')">2</button>
+            <button class="btn-number" onclick="appendToken('3')">3</button>
+            <button class="btn-operator" onclick="appendOp('+')">+</button>
+
+            <button class="btn-number double-width" onclick="appendToken('0')">0</button>
+            <button class="btn-number" onclick="appendToken('.')">,</button>
+            <button class="btn-operator btn-equal" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        // Estado da Aplicação
+        let currentInput = '0';
+        let internalExpression = '0'; 
+        let isEvaluated = false;
+        let history = JSON.parse(localStorage.getItem('calc_history')) || [];
+
+        const displayCurrent = document.getElementById('display-current');
+        const displayHistory = document.getElementById('display-history');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const sciKeys = document.getElementById('scientific-keys');
+        const calcTitle = document.getElementById('calc-title');
+        const historyPanel = document.getElementById('history-panel');
+        const historyList = document.getElementById('history-list');
+
+        // Alternar Menu Lateral
+        function toggleMenu() {
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Alternar Modos (Padrão / Científico)
+        function switchMode(mode) {
+            document.getElementById('opt-std').classList.remove('active');
+            document.getElementById('opt-sci').classList.remove('active');
+
+            if (mode === 'scientific') {
+                sciKeys.classList.add('active');
+                calcTitle.innerText = 'Científica';
+                document.getElementById('opt-sci').classList.add('active');
+            } else {
+                sciKeys.classList.remove('active');
+                calcTitle.innerText = 'Padrão';
+                document.getElementById('opt-std').classList.add('active');
+            }
+            toggleMenu();
+        }
+
+        // Alternar Temas (Claro / Escuro)
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            toggleMenu();
+        }
+
+        // Adicionar Números e Símbolos Visuais
+        function appendToken(token) {
+            if (currentInput === '0' && token !== '.' || isEvaluated) {
+                currentInput = token;
+                internalExpression = token;
+                isEvaluated = false;
+            } else {
+                currentInput += token;
+                internalExpression += token;
+            }
+            updateDisplay();
+        }
+
+        // Adicionar Operadores Básicos
+        function appendOp(op) {
+            if (isEvaluated) isEvaluated = false;
+            
+            let displayOp = op;
+            if (op === '*') displayOp = '×';
+            if (op === '/') displayOp = '÷';
+            if (op === '**') displayOp = '^';
+
+            currentInput += ' ' + displayOp + ' ';
+            internalExpression += ' ' + op + ' ';
+            updateDisplay();
+        }
+
+        // Funções Avançadas da Científica
+        function appendSci(jsFunc) {
+            if (currentInput === '0' || isEvaluated) {
+                currentInput = jsFunc.replace('Math.', '').replace('10', '');
+                internalExpression = jsFunc;
+                isEvaluated = false;
+            } else {
+                currentInput += jsFunc.replace('Math.', '').replace('10', '');
+                internalExpression += jsFunc;
+            }
+            updateDisplay();
+        }
+
+        // Limpar Tudo
+        function clearAll() {
+            currentInput = '0';
+            internalExpression = '0';
+            displayHistory.innerText = '';
+            updateDisplay();
+        }
+
+        // Apagar Último Caractere (Backspace)
+        function deleteLast() {
+            if (currentInput.length > 1) {
+                currentInput = currentInput.trimEnd().slice(0, -1).trimEnd();
+                internalExpression = internalExpression.trimEnd().slice(0, -1).trimEnd();
+                if(currentInput === '') { currentInput = '0'; internalExpression = '0'; }
+            } else {
+                currentInput = '0';
+                internalExpression = '0';
+            }
+            updateDisplay();
+        }
+
+        // Atualizar interface do Display
+        function updateDisplay() {
+            displayCurrent.innerText = currentInput;
+            displayCurrent.scrollTop = displayCurrent.scrollHeight;
+        }
+
+        // Executar Cálculo com segurança
+        function calculate() {
+            try {
+                let exprToEval = internalExpression;
+                
+                // Trata fechamento automático de parênteses pendentes se necessário
+                const openBrackets = (exprToEval.match(/\(/g) || []).length;
+                const closeBrackets = (exprToEval.match(/\)/g) || []).length;
+                for(let i=0; i < (openBrackets - closeBrackets); i++) {
+                    exprToEval += ')';
+                    currentInput += ')';
+                }
+
+                // Avalia expressão JavaScript com segurança controlada
+                let result = eval(exprToEval);
+                
+                if (result === Infinity || isNaN(result)) {
+                    throw new Error("Divisão por zero");
+                }
+
+                // Arredondamento inteligente para evitar falhas de ponto flutuante (Ex: 0.1 + 0.2)
+                result = Math.round(result * 100000000) / 100000000;
+
+                displayHistory.innerText = currentInput + ' =';
+                
+                // Salva no Histórico
+                saveToHistory(currentInput, result);
+
+                currentInput = result.toString();
+                internalExpression = result.toString();
+                isEvaluated = true;
+                updateDisplay();
+
+            } catch (error) {
+                displayCurrent.innerText = 'Erro';
+                currentInput = '0';
+                internalExpression = '0';
+                isEvaluated = true;
+            }
+        }
+
+        // Manipulação do Histórico
+        function saveToHistory(expr, res) {
+            history.unshift({ expr: expr, res: res });
+            if (history.length > 20) history.pop(); // Limita a 20 itens
+            localStorage.setItem('calc_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<li class="history-item" style="color:var(--txt-muted); text-align:center;">Nenhum histórico disponível</li>';
+                return;
+            }
+            history.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `<div style="color: var(--txt-muted); font-size:14px;">${item.expr}</div><div style="font-size:20px; font-weight:600; color:var(--accent);">${item.res}</div>`;
+                li.onclick = () => {
+                    currentInput = item.res.toString();
+                    internalExpression = item.res.toString();
+                    isEvaluated = false;
+                    updateDisplay();
+                    toggleHistory();
+                };
+                historyList.appendChild(li);
+            });
+        }
+
+        function toggleHistory() {
+            renderHistory();
+            historyPanel.classList.toggle('active');
+            if(sidebar.classList.contains('active')) toggleMenu();
+        }
+
+        function clearHistory() {
+            history = [];
+            localStorage.removeItem('calc_history');
+            renderHistory();
+            alert('Histórico apagado com sucesso!');
+            toggleMenu();
+        }
+
+        // Suporte a teclado físico básico
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9' || e.key === '.') appendToken(e.key);
+            if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') appendOp(e.key);
+            if (e.key === 'Enter' || e.key === '=') calculate();
+            if (e.key === 'Backspace') deleteLast();
+            if (e.key === 'Escape') clearAll();
+        });
+    </script>
+</body>
+</html>
